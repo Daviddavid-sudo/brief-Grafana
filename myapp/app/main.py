@@ -1,16 +1,30 @@
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
-from app.monitoring import REQUEST_COUNTER, REQUEST_LATENCY
-import time
+from contextlib import asynccontextmanager
+from sqlmodel import SQLModel, create_engine
+from app.routers.items import items_router  # <-- make sure this points to items.py
 
-app = FastAPI()
-instrumentator = Instrumentator()
+DATABASE_URL = "sqlite:///./test.db"
+engine = create_engine(DATABASE_URL, echo=True)
 
-@app.get("/items/{item_id}")
-async def read_item(item_id: int):
-    with REQUEST_LATENCY.time():
-        REQUEST_COUNTER.inc()
-        return {"item_id": item_id}
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    SQLModel.metadata.create_all(engine)
+    yield
+    # Optional shutdown code here
 
-# Expose /metrics
-instrumentator.instrument(app).expose(app)
+app = FastAPI(title="Items API", lifespan=lifespan)
+
+# Prometheus instrumentation
+instrumentator = Instrumentator(
+    should_group_status_codes=False,
+    should_ignore_untemplated=True,
+    should_instrument_requests_inprogress=True,
+    excluded_handlers=["/metrics"]
+)
+instrumentator.instrument(app).expose(app, endpoint="/metrics")
+
+# Include API routes
+app.include_router(items_router)
+
