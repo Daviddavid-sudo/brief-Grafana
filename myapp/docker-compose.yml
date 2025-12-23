@@ -1,4 +1,3 @@
-version: '3.8'
 
 networks:
   monitoring:
@@ -6,13 +5,13 @@ networks:
 
 volumes:
   grafana_data:
-  postgres_data:
   prometheus_data:
+  postgres_data:
 
 services:
-  # FastAPI application
+  # FastAPI
   api:
-    build: .
+    build: ./app
     container_name: fastapi_app
     ports:
       - "8000:8000"
@@ -23,7 +22,7 @@ services:
     depends_on:
       - db
 
-  # PostgreSQL database
+  # PostgreSQL
   db:
     image: postgres:16-alpine
     container_name: postgres_db
@@ -51,6 +50,8 @@ services:
       - "9090:9090"
     networks:
       - monitoring
+    depends_on:
+      - api
 
   # Grafana
   grafana:
@@ -64,7 +65,7 @@ services:
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana_data:/var/lib/grafana
-    depends_on:
-      - prometheus
     networks:
       - monitoring
+    depends_on:
+      - prometheus
