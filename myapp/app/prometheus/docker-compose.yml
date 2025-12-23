@@ -1,0 +1,10 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    user: "0:0"  # run as root
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+
